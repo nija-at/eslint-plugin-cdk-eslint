@@ -3,7 +3,10 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 
 const linter = new ESLint({
-  overrideConfigFile: path.join(__dirname, 'eslintrc.json'),
+  overrideConfigFile: path.join(__dirname, 'eslintrc.js'),
+  rulePaths: [
+    path.join(__dirname, '../../lib/rules'),
+  ]
 });
 
 describe('test-rule', () => {
@@ -17,7 +20,7 @@ describe('test-rule', () => {
       const testName = path.basename(f, '.ts')
       test(testName, async () => {
         const result = await linter.lintFiles(path.join(invalidDir, f));
-        let messages: string | undefined = undefined;
+        let messages = '';
         if (result.length > 0) {
           const msgs: string[] = [];
           result[0].messages.forEach(m => { // [0], since only linting one file
@@ -25,7 +28,7 @@ describe('test-rule', () => {
           });
           messages = msgs.join('\n');
         }
-        expect(messages).toBeUndefined();
+        expect(messages).toEqual('');
       });
     });
   });
