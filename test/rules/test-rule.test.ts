@@ -13,23 +13,35 @@ describe('test-rule', () => {
   describe('invalid', () => {
     
     const invalidDir = path.join(__dirname, 'test-rule', 'invalid');
-    const files = fs.readdirSync(invalidDir);
-    const tsFiles = files.filter(f => f.endsWith('.ts'));
+    const files = tsFiles(invalidDir);
 
-    tsFiles.forEach(f => {
+    files.forEach(f => {
       const testName = path.basename(f, '.ts')
       test(testName, async () => {
         const result = await linter.lintFiles(path.join(invalidDir, f));
-        let messages = '';
-        if (result.length > 0) {
-          const msgs: string[] = [];
-          result[0].messages.forEach(m => { // [0], since only linting one file
-            msgs.push(`[${m.ruleId}] ${m.message} @ ${m.line}:${m.column}`);
-          });
-          messages = msgs.join('\n');
-        }
-        expect(messages).toEqual('');
+        const resultString = (await linter.loadFormatter()).format(result);
+        expect(resultString).toBeFalsy();
+      });
+    });
+  });
+
+  describe('valid', () => {
+    
+    const invalidDir = path.join(__dirname, 'test-rule', 'valid');
+    const files = tsFiles(invalidDir);
+
+    files.forEach(f => {
+      const testName = path.basename(f, '.ts')
+      test(testName, async () => {
+        const result = await linter.lintFiles(path.join(invalidDir, f));
+        const resultString = (await linter.loadFormatter()).format(result);
+        expect(resultString).toBeFalsy();
       });
     });
   });
 });
+
+function tsFiles(dir: string) {
+  const files = fs.readdirSync(dir);
+  return files.filter(f => f.endsWith('.ts'));
+}
