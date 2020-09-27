@@ -10,14 +10,16 @@ export function create(context: Rule.RuleContext): Rule.NodeListener {
     // `node` is a type from @typescript-eslint/typescript-estree, but using 'any' for now
     // since it's incompatible with eslint.Rule namespace. Waiting for better compatibility in
     // https://github.com/typescript-eslint/typescript-eslint/tree/1765a178e456b152bd48192eb5db7e8541e2adf2/packages/experimental-utils#note
-    // Meanwhile, use https://astexplorer.net/ with parser set to '@typescript-eslint/parser' and
-    // transfrom set to 'ESLint v4' to explore the AST node.
+    // Meanwhile, use a debugger to explore the AST node.
 
     ImportDeclaration(node: any) {
       if (node.source.value === '@aws-cdk/core') {
         node.specifiers.forEach((s: any) => {
-          if (BANNED_CLASSES.includes(s.imported.name)) {
+          let name: string;
+          if (s.type === 'ImportSpecifier' && BANNED_CLASSES.includes(s.imported.name)) {
             pushRecord(context.getFilename(), s.local.name);
+          } else if (s.type === 'ImportNamespaceSpecified') {
+            BANNED_CLASSES.forEach(c => pushRecord(context.getFilename(), `${s.local.name}.${c}`));
           }
         });
       }
@@ -50,6 +52,8 @@ export function create(context: Rule.RuleContext): Rule.NodeListener {
             typeName = typeAnnotation.typeName.name;
           } else if (typeAnnotation.type === 'TSArrayType' && typeAnnotation.elementType.type === 'TSTypeReference') {
             typeName = typeAnnotation.elementType.typeName.name;
+          } else if (typeAnnotation.type === 'TSQualifiedName') {
+            typeName = `${typeAnnotation.left.name}.${typeAnnotation.right.name}`;
           }
           if (typeName && checkRecord(context.getFilename(), typeName)) {
             context.report({

@@ -1,4 +1,6 @@
 import { App, Construct } from '@aws-cdk/core';
+import * as cdk from '@aws-cdk/core';
+import { Construct as CoreConstruct } from '@aws-cdk/core';
 
 const app = new App();
 
