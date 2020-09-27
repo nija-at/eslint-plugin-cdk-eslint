@@ -1,4 +1,5 @@
 import { Rule } from 'eslint';
+import { type } from 'os';
 import { pushRecord, checkRecord } from '../private/import-cache';
 
 const BANNED_CLASSES = [ 'Construct', 'IConstruct' ];
@@ -29,8 +30,28 @@ export function create(context: Rule.RuleContext): Rule.NodeListener {
 
       if (isConstructor) {
         node.value.params.forEach((p: any) => {
-          const typeName = p.typeAnnotation.typeAnnotation.typeName.name;
-          if (checkRecord(context.getFilename(), typeName)) {
+          let typeAnnotation;
+          if (p.type === 'Identifier' || p.type === 'RestElement') {
+            typeAnnotation = p.typeAnnotation.typeAnnotation;
+          } else if (p.type === 'TSParameterProperty') {
+            if (p.parameter.type === 'AssignmentPattern') {
+              typeAnnotation = p.parameter.left.typeAnnotation.typeAnnotation;
+            } else {
+              typeAnnotation = p.parameter.typeAnnotation.typeAnnotation;
+            }
+          } else if (p.type === 'AssignmentPattern') {
+            typeAnnotation = p.left.typeAnnotation.typeAnnotation;
+          } else {
+            throw new Error(`Unknown parameter type ${p.type}`);
+          }
+
+          let typeName: string | undefined;
+          if (typeAnnotation.type === 'TSTypeReference') {
+            typeName = typeAnnotation.typeName.name;
+          } else if (typeAnnotation.type === 'TSArrayType' && typeAnnotation.elementType.type === 'TSTypeReference') {
+            typeName = typeAnnotation.elementType.typeName.name;
+          }
+          if (typeName && checkRecord(context.getFilename(), typeName)) {
             context.report({
               node,
               message: `constructor type invalid`

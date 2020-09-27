@@ -30,7 +30,9 @@
     "node": ">=0.10.0"
   },
   "jest": {
-    "testMatch": [ "**/*.test.js" ]
+    "testMatch": [
+      "**/*.test.js"
+    ]
   },
   "license": "MIT"
 }
